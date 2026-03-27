@@ -24,7 +24,8 @@ app.use(cookieParser());
 app.use(
     cors({
         // origin: 'http://localhost:5173', // frontend link
-        origin: "*",
+       // origin: "*",
+       origin: "https://edu-point-eight.vercel.app",
         credentials: true
     })
 );
