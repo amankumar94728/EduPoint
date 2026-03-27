@@ -36,15 +36,15 @@ app.use(
 )
 
 
+connectDB();
+cloudinaryConnect();
+
+// THEN start server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`Server Started on PORT ${PORT}`);
 });
-
-// connections
-connectDB();
-cloudinaryConnect();
 
 // mount route
 app.use('/api/v1/auth', userRoutes);
