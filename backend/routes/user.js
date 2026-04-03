@@ -6,7 +6,9 @@ const {
     signup,
     login,
     sendOTP,
-    changePassword
+    changePassword,
+    demoLogin,
+    firebaseLogin,
 } = require('../controllers/auth');
 
 // Resetpassword controllers
@@ -37,6 +39,12 @@ router.post('/sendotp', sendOTP);
 
 // Route for Changing the password
 router.post('/changepassword', auth, changePassword);
+
+// Route for Demo Login
+router.post('/demo-login', demoLogin);
+
+// Route for Firebase Login (Google + Email)
+router.post('/firebase-login', firebaseLogin);
 
 
 

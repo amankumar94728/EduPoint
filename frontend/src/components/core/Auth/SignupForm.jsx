@@ -1,13 +1,16 @@
 import { useState } from "react"
 import { toast } from "react-hot-toast"
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai"
+import { FcGoogle } from "react-icons/fc"
 import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from "firebase/auth"
 
-import { sendOtp } from "../../../services/operations/authAPI"
+import { sendOtp, firebaseAuth } from "../../../services/operations/authAPI"
 import { setSignupData } from "../../../slices/authSlice"
 import { ACCOUNT_TYPE } from "../../../utils/constants"
 import Tab from "../../common/Tab"
+import { auth, googleProvider } from "../../../config/firebase"
 
 
 
@@ -41,35 +44,48 @@ function SignupForm() {
     // console.log('signup form data - ', formData);
   };
 
-  // Handle Form Submission
-  const handleOnSubmit = (e) => {
-    e.preventDefault();
+  // Handle Form Submission — Firebase email/password signup
+  const handleOnSubmit = async (e) => {
+    e.preventDefault()
 
     if (password !== confirmPassword) {
       toast.error("Passwords Do Not Match")
-      return;
+      return
     }
-    const signupData = {
-      ...formData,
-      accountType,
-    };
 
-    // Setting signup data to state
-    // To be used after otp verification
-    dispatch(setSignupData(signupData));
-    // Send OTP to user for verification
-    dispatch(sendOtp(formData.email, navigate));
+    try {
+      // Create account in Firebase (no SMTP needed — Firebase sends verification email)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      await sendEmailVerification(userCredential.user)
 
-    // Reset form data
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    })
-    setAccountType(ACCOUNT_TYPE.STUDENT);
-  };
+      // Get Firebase ID token and log in immediately
+      const idToken = await userCredential.user.getIdToken()
+      dispatch(firebaseAuth(idToken, { firstName, lastName, accountType }, navigate))
+
+      toast.success("Account created! A verification email has been sent to your inbox.")
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        toast.error("This email is already registered. Please log in.")
+      } else if (error.code === 'auth/weak-password') {
+        toast.error("Password must be at least 6 characters.")
+      } else {
+        toast.error(error.message || "Signup failed")
+      }
+    }
+
+    setFormData({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "" })
+    setAccountType(ACCOUNT_TYPE.STUDENT)
+  }
+
+  const handleGoogleSignup = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const idToken = await result.user.getIdToken()
+      dispatch(firebaseAuth(idToken, { accountType }, navigate))
+    } catch (error) {
+      console.error("Google sign-up error", error)
+    }
+  }
 
   // data to pass to Tab component
   const tabData = [
@@ -218,6 +234,23 @@ function SignupForm() {
           className="mt-6 rounded-[8px] bg-yellow-50 py-[8px] px-[12px] font-medium text-richblack-900"
         >
           Create Account
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-x-2">
+          <div className="h-[1px] w-full bg-richblack-700" />
+          <p className="text-richblack-400 text-sm whitespace-nowrap">or</p>
+          <div className="h-[1px] w-full bg-richblack-700" />
+        </div>
+
+        {/* Google Sign-Up */}
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          className="flex items-center justify-center gap-x-2 rounded-[8px] border border-richblack-600 bg-richblack-800 py-[8px] px-[12px] font-medium text-richblack-100 hover:bg-richblack-700 transition-all"
+        >
+          <FcGoogle fontSize={20} />
+          Sign up with Google
         </button>
       </form>
     </div>

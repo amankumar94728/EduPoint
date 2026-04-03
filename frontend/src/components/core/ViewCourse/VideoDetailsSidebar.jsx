@@ -10,6 +10,7 @@ import { IoIosArrowBack } from "react-icons/io"
 
 import { IoMdClose } from 'react-icons/io'
 import { HiMenuAlt1 } from 'react-icons/hi'
+import { MdQuiz } from 'react-icons/md'
 
 
 
@@ -21,7 +22,7 @@ export default function VideoDetailsSidebar({ setReviewModal }) {
   const location = useLocation()
   const dispatch = useDispatch();
 
-  const { sectionId, subSectionId } = useParams()
+  const { sectionId, subSectionId, quizId } = useParams()
   const {
     courseSectionData,
     courseEntireData,
@@ -141,6 +142,26 @@ export default function VideoDetailsSidebar({ setReviewModal }) {
                       {topic.title}
                     </div>
                   ))}
+
+                  {/* Quiz link for this section */}
+                  {section?.quiz && (
+                    <div
+                      className={`flex items-center gap-3 px-5 py-2 cursor-pointer ${
+                        quizId === section.quiz?._id || quizId === section.quiz
+                          ? "bg-yellow-200 font-semibold text-richblack-800"
+                          : "hover:bg-richblack-900 text-yellow-50"
+                      }`}
+                      onClick={() => {
+                        const qId = section.quiz?._id || section.quiz
+                        navigate(`/view-course/${courseEntireData?._id}/section/${section?._id}/quiz/${qId}`)
+                        setVideoBarActive(null)
+                        courseViewSidebar && window.innerWidth <= 640 ? dispatch(setCourseViewSidebar(false)) : null
+                      }}
+                    >
+                      <MdQuiz size={16} />
+                      <span className="text-sm font-medium">Section Quiz</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

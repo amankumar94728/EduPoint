@@ -48,6 +48,16 @@ const {
     getAllRatingReview
 } = require('../controllers/ratingAndReview');
 
+// quiz controllers
+const {
+    createQuiz,
+    updateQuiz,
+    deleteQuiz,
+    getQuizDetails,
+    submitQuiz,
+    getQuizResult,
+} = require('../controllers/quiz');
+
 
 // Middlewares
 const { auth, isAdmin, isInstructor, isStudent } = require('../middleware/auth')
@@ -114,6 +124,20 @@ router.post("/getCategoryPageDetails", getCategoryPageDetails)
 router.post('/createRating', auth, isStudent, createRating);
 router.get('/getAverageRating', getAverageRating);
 router.get('/getReviews', getAllRatingReview);
+
+
+// ********************************************************************************************************
+//                                      Quiz Routes
+// ********************************************************************************************************
+// Instructor routes
+router.post('/createQuiz', auth, isInstructor, createQuiz);
+router.post('/updateQuiz', auth, isInstructor, updateQuiz);
+router.post('/deleteQuiz', auth, isInstructor, deleteQuiz);
+
+// Authenticated routes (student + instructor)
+router.post('/getQuizDetails', auth, getQuizDetails);
+router.post('/submitQuiz', auth, isStudent, submitQuiz);
+router.post('/getQuizResult', auth, getQuizResult);
 
 
 module.exports = router;

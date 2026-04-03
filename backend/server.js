@@ -21,12 +21,23 @@ const courseRoutes = require('./routes/course');
 // middleware 
 app.use(express.json()); // to parse json body
 app.use(cookieParser());
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(
     cors({
-        // origin: 'http://localhost:5173', // frontend link
-       // origin: "*",
-       origin: "https://edu-point-eight.vercel.app",
-        credentials: true
+        origin: (origin, callback) => {
+            // allow requests with no origin (mobile apps, curl, Postman)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) return callback(null, true);
+            // in development or if no FRONTEND_URL set, allow all
+            if (!process.env.FRONTEND_URL) return callback(null, true);
+            callback(new Error('Not allowed by CORS'));
+        },
+        credentials: true,
     })
 );
 app.use(

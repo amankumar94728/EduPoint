@@ -1,16 +1,18 @@
 import { useState } from "react"
 import { AiFillCaretDown } from "react-icons/ai"
 import { FaPlus } from "react-icons/fa"
-import { MdEdit } from "react-icons/md"
+import { MdEdit, MdQuiz } from "react-icons/md"
 import { RiDeleteBin6Line } from "react-icons/ri"
 import { RxDropdownMenu } from "react-icons/rx"
 import { useDispatch, useSelector } from "react-redux"
 
 import { deleteSection, deleteSubSection } from "../../../../../services/operations/courseDetailsAPI"
+import { deleteQuiz } from "../../../../../services/operations/quizAPI"
 import { setCourse } from "../../../../../slices/courseSlice"
 
 import ConfirmationModal from "../../../../common/ConfirmationModal"
 import SubSectionModal from "./SubSectionModal"
+import QuizModal from "./QuizModal"
 
 
 
@@ -27,6 +29,8 @@ export default function NestedView({ handleChangeEditSectionName }) {
   const [editSubSection, setEditSubSection] = useState(null)
   // to keep track of confirmation modal
   const [confirmationModal, setConfirmationModal] = useState(null)
+  // quiz modal: { sectionId, existingQuiz }
+  const [quizModal, setQuizModal] = useState(null)
 
   // Delele Section
   const handleDeleleSection = async (sectionId) => {
@@ -37,7 +41,13 @@ export default function NestedView({ handleChangeEditSectionName }) {
     setConfirmationModal(null)
   }
 
-  // Delete SubSection 
+  // Delete Quiz
+  const handleDeleteQuiz = async (quizId, sectionId) => {
+    await deleteQuiz({ quizId, sectionId }, token, course, dispatch)
+    setConfirmationModal(null)
+  }
+
+  // Delete SubSection
   const handleDeleteSubSection = async (subSectionId, sectionId) => {
     const result = await deleteSubSection({ subSectionId, sectionId, token })
     if (result) {
@@ -154,6 +164,45 @@ export default function NestedView({ handleChangeEditSectionName }) {
                 <FaPlus className="text-lg" />
                 <p>Add Lecture</p>
               </button>
+
+              {/* Quiz for this Section */}
+              {section.quiz ? (
+                <div className="mt-2 flex items-center gap-x-3 rounded-lg bg-richblack-600 px-3 py-2">
+                  <MdQuiz className="text-yellow-50 shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-richblack-50">
+                    {section.quiz.title || "Section Quiz"}
+                  </span>
+                  <button
+                    onClick={() => setQuizModal({ sectionId: section._id, existingQuiz: section.quiz })}
+                    title="Edit Quiz"
+                  >
+                    <MdEdit className="text-richblack-300 hover:text-white" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setConfirmationModal({
+                        text1: "Delete this Quiz?",
+                        text2: "All student attempts for this quiz will also be deleted",
+                        btn1Text: "Delete",
+                        btn2Text: "Cancel",
+                        btn1Handler: () => handleDeleteQuiz(section.quiz._id || section.quiz, section._id),
+                        btn2Handler: () => setConfirmationModal(null),
+                      })
+                    }
+                    title="Delete Quiz"
+                  >
+                    <RiDeleteBin6Line className="text-richblack-300 hover:text-red-400" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setQuizModal({ sectionId: section._id, existingQuiz: null })}
+                  className="mt-2 flex items-center gap-x-1 text-yellow-50"
+                >
+                  <MdQuiz className="text-lg" />
+                  <p>Add Quiz</p>
+                </button>
+              )}
             </div>
           </details>
         ))}
@@ -183,6 +232,15 @@ export default function NestedView({ handleChangeEditSectionName }) {
       ) : (
         <></>
       )}
+      {/* Quiz Modal */}
+      {quizModal && (
+        <QuizModal
+          sectionId={quizModal.sectionId}
+          existingQuiz={quizModal.existingQuiz}
+          setModalData={setQuizModal}
+        />
+      )}
+
       {/* Confirmation Modal */}
       {confirmationModal ? (
         <ConfirmationModal modalData={confirmationModal} />

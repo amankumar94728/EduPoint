@@ -1,5 +1,7 @@
 const Course = require('../models/course');
 const Section = require('../models/section');
+const Quiz = require('../models/quiz');
+const QuizAttempt = require('../models/quizAttempt');
 
 // ================ create Section ================
 exports.createSection = async (req, res) => {
@@ -32,10 +34,10 @@ exports.createSection = async (req, res) => {
         const updatedCourseDetails = await Course.findById(courseId)
             .populate({
                 path: 'courseContent',
-                populate: {
-                    path: 'subSection'
-                }
-
+                populate: [
+                    { path: 'subSection' },
+                    { path: 'quiz' },
+                ],
             })
 
         // above -- populate remaining 
@@ -108,6 +110,13 @@ exports.deleteSection = async (req, res) => {
     try {
         const { sectionId, courseId } = req.body;
         // console.log('sectionId = ', sectionId);
+
+        // delete associated quiz and attempts
+        const section = await Section.findById(sectionId);
+        if (section?.quiz) {
+            await QuizAttempt.deleteMany({ quizId: section.quiz });
+            await Quiz.findByIdAndDelete(section.quiz);
+        }
 
         // delete section by id from DB
         await Section.findByIdAndDelete(sectionId);

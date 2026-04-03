@@ -33,6 +33,7 @@ import AddCourse from "./components/core/Dashboard/AddCourse/AddCourse";
 
 import ViewCourse from "./pages/ViewCourse";
 import VideoDetails from './components/core/ViewCourse/VideoDetails';
+import QuizView from './components/core/ViewCourse/QuizView';
 
 
 import { HiArrowNarrowUp } from "react-icons/hi"
@@ -169,6 +170,10 @@ function App() {
           <Route
             path="view-course/:courseId/section/:sectionId/sub-section/:subSectionId"
             element={<VideoDetails />}
+          />
+          <Route
+            path="view-course/:courseId/section/:sectionId/quiz/:quizId"
+            element={<QuizView />}
           />
         </Route>
 

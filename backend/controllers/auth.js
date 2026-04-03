@@ -1,6 +1,8 @@
 // sendOtp , signup , login ,  changePassword
 const User = require('./../models/user');
 const Profile = require('./../models/profile');
+const Course = require('./../models/course');
+const CourseProgress = require('./../models/courseProgress');
 const optGenerator = require('otp-generator');
 const OTP = require('../models/OTP')
 const bcrypt = require('bcrypt');
@@ -10,6 +12,7 @@ const cookie = require('cookie');
 const mailSender = require('../utils/mailSender');
 const otpTemplate = require('../mail/templates/emailVerificationTemplate');
 const { passwordUpdated } = require("../mail/templates/passwordUpdate");
+const admin = require('../config/firebase');
 
 // ================ SEND-OTP For Email Verification ================
 exports.sendOTP = async (req, res) => {
@@ -335,3 +338,172 @@ exports.changePassword = async (req, res) => {
         })
     }
 }
+
+// ================ DEMO LOGIN ================
+exports.demoLogin = async (req, res) => {
+    try {
+        const demoEmail = process.env.DEMO_EMAIL || 'demo@edupoint.com';
+        const demoPassword = process.env.DEMO_PASSWORD || 'Demo@12345';
+
+        // find or create the demo user
+        let demoUser = await User.findOne({ email: demoEmail }).populate('additionalDetails');
+
+        if (!demoUser) {
+            // create profile
+            const profileDetails = await Profile.create({
+                gender: null, dateOfBirth: null, about: 'Demo student account with access to all courses.', contactNumber: null
+            });
+
+            const hashedPassword = await bcrypt.hash(demoPassword, 10);
+
+            demoUser = await User.create({
+                firstName: 'Demo',
+                lastName: 'Student',
+                email: demoEmail,
+                password: hashedPassword,
+                accountType: 'Student',
+                approved: true,
+                active: true,
+                additionalDetails: profileDetails._id,
+                image: `https://api.dicebear.com/5.x/initials/svg?seed=Demo Student`,
+            });
+
+            demoUser = await User.findById(demoUser._id).populate('additionalDetails');
+        }
+
+        // enroll demo user in all published courses they aren't already enrolled in
+        const publishedCourses = await Course.find({ status: 'Published' }).select('_id studentsEnrolled');
+
+        for (const course of publishedCourses) {
+            if (!course.studentsEnrolled.includes(demoUser._id)) {
+                // add student to course
+                await Course.findByIdAndUpdate(course._id, {
+                    $push: { studentsEnrolled: demoUser._id }
+                });
+
+                // create course progress entry
+                const courseProgress = await CourseProgress.create({
+                    courseID: course._id,
+                    userId: demoUser._id,
+                    completedVideos: [],
+                });
+
+                // add course + progress to user
+                await User.findByIdAndUpdate(demoUser._id, {
+                    $push: {
+                        courses: course._id,
+                        courseProgress: courseProgress._id,
+                    },
+                });
+            }
+        }
+
+        // re-fetch updated user
+        demoUser = await User.findById(demoUser._id).populate('additionalDetails');
+
+        // generate JWT
+        const payload = {
+            email: demoUser.email,
+            id: demoUser._id,
+            accountType: demoUser.accountType,
+        };
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+        let userObj = demoUser.toObject();
+        userObj.token = token;
+        userObj.password = undefined;
+
+        const cookieOptions = {
+            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+            httpOnly: true,
+        };
+
+        return res.cookie('token', token, cookieOptions).status(200).json({
+            success: true,
+            user: userObj,
+            token,
+            message: 'Demo login successful',
+        });
+    } catch (error) {
+        console.error('Error during demo login:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message,
+            message: 'Demo login failed',
+        });
+    }
+};
+
+
+// ================ FIREBASE LOGIN (Google + Email) ================
+exports.firebaseLogin = async (req, res) => {
+    try {
+        const { idToken, firstName, lastName, accountType } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ success: false, message: 'Firebase ID token is required' });
+        }
+
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+        const { email, name, picture, uid } = decodedToken;
+
+        // Find existing user or create new one
+        let user = await User.findOne({ email }).populate('additionalDetails');
+
+        if (!user) {
+            // Extract name parts
+            const nameParts = (name || '').split(' ');
+            const fName = firstName || nameParts[0] || 'User';
+            const lName = lastName || nameParts.slice(1).join(' ') || '.';
+
+            const profileDetails = await Profile.create({
+                gender: null, dateOfBirth: null, about: null, contactNumber: null,
+            });
+
+            // generate a random password for Firebase users (they won't use it)
+            const randomPassword = await bcrypt.hash(uid + process.env.JWT_SECRET, 10);
+
+            user = await User.create({
+                firstName: fName,
+                lastName: lName,
+                email,
+                password: randomPassword,
+                accountType: accountType || 'Student',
+                approved: true,
+                active: true,
+                additionalDetails: profileDetails._id,
+                image: picture || `https://api.dicebear.com/5.x/initials/svg?seed=${fName} ${lName}`,
+            });
+
+            user = await User.findById(user._id).populate('additionalDetails');
+        }
+
+        // Generate our JWT
+        const payload = { email: user.email, id: user._id, accountType: user.accountType };
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+        let userObj = user.toObject();
+        userObj.token = token;
+        userObj.password = undefined;
+
+        const cookieOptions = {
+            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+            httpOnly: true,
+        };
+
+        return res.cookie('token', token, cookieOptions).status(200).json({
+            success: true,
+            user: userObj,
+            token,
+            message: 'Login successful',
+        });
+    } catch (error) {
+        console.error('Firebase login error:', error.message || error);
+        return res.status(401).json({
+            success: false,
+            message: error.message || 'Invalid or expired Firebase token',
+        });
+    }
+};

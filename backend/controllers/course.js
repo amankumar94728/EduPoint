@@ -160,10 +160,10 @@ exports.getCourseDetails = async (req, res) => {
 
             .populate({
                 path: "courseContent",
-                populate: {
-                    path: "subSection",
-                    select: "-videoUrl",
-                },
+                populate: [
+                    { path: "subSection", select: "-videoUrl" },
+                    { path: "quiz" },
+                ],
             })
             .exec()
 
@@ -237,9 +237,10 @@ exports.getFullCourseDetails = async (req, res) => {
             .populate("ratingAndReviews")
             .populate({
                 path: "courseContent",
-                populate: {
-                    path: "subSection",
-                },
+                populate: [
+                    { path: "subSection" },
+                    { path: "quiz" },
+                ],
             })
             .exec()
 
@@ -345,9 +346,10 @@ exports.editCourse = async (req, res) => {
             .populate("ratingAndReviews")
             .populate({
                 path: "courseContent",
-                populate: {
-                    path: "subSection",
-                },
+                populate: [
+                    { path: "subSection" },
+                    { path: "quiz" },
+                ],
             })
             .exec()
 

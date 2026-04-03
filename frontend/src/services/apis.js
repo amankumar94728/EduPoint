@@ -7,6 +7,8 @@ export const endpoints = {
   LOGIN_API: BASE_URL + "/auth/login",
   RESETPASSTOKEN_API: BASE_URL + "/auth/reset-password-token",
   RESETPASSWORD_API: BASE_URL + "/auth/reset-password",
+  DEMO_LOGIN_API: BASE_URL + "/auth/demo-login",
+  FIREBASE_LOGIN_API: BASE_URL + "/auth/firebase-login",
 }
 
 // PROFILE ENDPOINTS
@@ -60,6 +62,16 @@ export const catalogData = {
 // CONTACT-US API
 export const contactusEndpoint = {
   CONTACT_US_API: BASE_URL + "/reach/contact",
+}
+
+// QUIZ ENDPOINTS
+export const quizEndpoints = {
+  CREATE_QUIZ_API: BASE_URL + "/course/createQuiz",
+  UPDATE_QUIZ_API: BASE_URL + "/course/updateQuiz",
+  DELETE_QUIZ_API: BASE_URL + "/course/deleteQuiz",
+  GET_QUIZ_DETAILS_API: BASE_URL + "/course/getQuizDetails",
+  SUBMIT_QUIZ_API: BASE_URL + "/course/submitQuiz",
+  GET_QUIZ_RESULT_API: BASE_URL + "/course/getQuizResult",
 }
 
 // SETTINGS PAGE API

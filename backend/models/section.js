@@ -10,8 +10,12 @@ const sectionSchema = new mongoose.Schema({
             ref: 'SubSection',
             required:true
         }
-    ]
-
+    ],
+    quiz: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Quiz',
+        default: null,
+    },
 });
 
 module.exports = mongoose.model('Section', sectionSchema);
