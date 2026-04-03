@@ -1,10 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Route, Routes, useLocation, useNavigate, Link } from "react-router-dom";
-import { getRedirectResult } from "firebase/auth";
-import { useDispatch } from "react-redux";
-import { auth } from "./config/firebase";
-import { firebaseAuth } from "./services/operations/authAPI";
+import { Route, Routes, useLocation, Link } from "react-router-dom";
 
 import Home from "./pages/Home"
 import Login from "./pages/Login"
@@ -44,21 +40,6 @@ import { HiArrowNarrowUp } from "react-icons/hi"
 
 
 function App() {
-  const dispatch = useDispatch()
-  const navigate = useNavigate ? useNavigate() : null
-
-  // Handle Google redirect result after returning from Google auth
-  useEffect(() => {
-    getRedirectResult(auth).then(async (result) => {
-      if (!result) return
-      const idToken = await result.user.getIdToken()
-      const accountType = localStorage.getItem("googleSignupAccountType") || "Student"
-      localStorage.removeItem("googleSignupAccountType")
-      dispatch(firebaseAuth(idToken, { accountType }, navigate || (() => {})))
-    }).catch((error) => {
-      console.error("Google redirect error:", error)
-    })
-  }, [])
 
   // Scroll to the top of the page when the component mounts
   const location = useLocation();

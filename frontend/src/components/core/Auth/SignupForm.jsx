@@ -4,7 +4,7 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai"
 import { FcGoogle } from "react-icons/fc"
 import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { createUserWithEmailAndPassword, sendEmailVerification, signInWithRedirect } from "firebase/auth"
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from "firebase/auth"
 
 import { sendOtp, firebaseAuth } from "../../../services/operations/authAPI"
 import { setSignupData } from "../../../slices/authSlice"
@@ -77,10 +77,14 @@ function SignupForm() {
     setAccountType(ACCOUNT_TYPE.STUDENT)
   }
 
-  const handleGoogleSignup = () => {
-    // store accountType so we can use it after redirect
-    localStorage.setItem("googleSignupAccountType", accountType)
-    signInWithRedirect(auth, googleProvider)
+  const handleGoogleSignup = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const idToken = await result.user.getIdToken()
+      dispatch(firebaseAuth(idToken, { accountType }, navigate))
+    } catch (error) {
+      console.error("Google sign-up error", error.message)
+    }
   }
 
   // data to pass to Tab component

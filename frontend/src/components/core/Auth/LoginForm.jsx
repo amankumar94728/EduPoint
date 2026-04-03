@@ -3,9 +3,9 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai"
 import { FcGoogle } from "react-icons/fc"
 import { useDispatch } from "react-redux"
 import { Link, useNavigate } from "react-router-dom"
-import { signInWithRedirect } from "firebase/auth"
+import { signInWithPopup } from "firebase/auth"
 
-import { login, demoLogin } from "../../../services/operations/authAPI"
+import { login, demoLogin, firebaseAuth } from "../../../services/operations/authAPI"
 import { auth, googleProvider } from "../../../config/firebase"
 
 function LoginForm() {
@@ -32,8 +32,14 @@ function LoginForm() {
     dispatch(login(email, password, navigate))
   }
 
-  const handleGoogleLogin = () => {
-    signInWithRedirect(auth, googleProvider)
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const idToken = await result.user.getIdToken()
+      dispatch(firebaseAuth(idToken, {}, navigate))
+    } catch (error) {
+      console.error("Google sign-in error", error.message)
+    }
   }
 
   return (
